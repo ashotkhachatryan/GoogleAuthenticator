@@ -7,7 +7,7 @@ if(OPENSSL_FOUND)
     set(HTTPLIB_IS_USING_OPENSSL TRUE)
 endif()
 
-set(CMAKE_CSXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)
 set(SRC_FILES src/main.cpp src/GoogleAuthenticator.cpp)
 
 add_executable(GoogleAuthenticator ${SRC_FILES})
