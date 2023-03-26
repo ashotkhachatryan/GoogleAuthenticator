@@ -3,6 +3,22 @@
 #include "constants.h"
 #include "GoogleAuthenticator.h"
 
+namespace {
+std::string runServerAndWait() {
+    httplib::Server svr;
+    std::string result;
+    svr.Get("/", [&svr, &result](const httplib::Request &req, httplib::Response &res) {
+        auto it = req.params.find("code");
+        if (it != req.params.end()) {
+            result = it->second;
+            res.set_content("The code has been received successfully. You may now close this window.", "text/plain");
+            svr.stop();
+        }
+    });
+    svr.listen("0.0.0.0", 55591);
+    return result;
+}
+
 struct QueryParams {
     std::string url;
     QueryParams(const std::initializer_list<std::pair<std::string, std::string>>& params) {
@@ -13,11 +29,12 @@ struct QueryParams {
         }
     }
 };
+}
 
 std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecret& clientSecret) {
         QueryParams queryParams {
             {"client_id", clientSecret.client_id},
-            {"redirect_uri", clientSecret.redirect_uris[0]},
+            {"redirect_uri", "http://localhost:55591/"},
             {"response_type", "code"},
             {"scope", GDRIVE_SCOPE},
             {"access_type", "offline"},
@@ -25,18 +42,15 @@ std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecre
 
         std::string url(AUTH_URL);
         std::cout << "Please copy and paste the following URL into your browser.\n"
-                  << url.append(queryParams.url);
+                  << url.append(queryParams.url) << '\n';
 
-        std::cin.get();
-        std::cout << "CODE IS: ";
-        std::string code;
-        std::cin >> code;
+        std::string code = runServerAndWait();
 
         httplib::Params params {
             {"code", code},
             {"client_id", clientSecret.client_id},
             {"client_secret", clientSecret.client_secret},
-            {"redirect_uri", clientSecret.redirect_uris[0]},
+            {"redirect_uri", "http://localhost:55591/"},
             {"grant_type", "authorization_code"}
         };
 
