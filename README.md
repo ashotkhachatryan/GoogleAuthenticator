@@ -20,7 +20,15 @@ int main(int argc, char** argv) {
     //    use to make an authorization request to obtain additional credentials.
     auto credentials = GoogleAuthenticator::Authenticate(secret);
     if (credentials) {
-        // Here credentials can be used to make further requests
+        // Credentials can be used to make further requests
+        
+        // Get list of Google Drive files under root
+        httplib::SSLClient cli(GAPI_URL);
+        auto res = cli.Get(FILES_URL + "?q='root'%20in%20parents",
+                           {{"Authorization", "Bearer " + credentials->access_token }});
+        if (res.error() == httplib::Error::Success) {
+            std::cout << res.value().body << std::endl;
+        }
     }
 }
 ```
