@@ -15,7 +15,7 @@ std::string runServerAndWait() {
             svr.stop();
         }
     });
-    svr.listen("0.0.0.0", 55591);
+    svr.listen("0.0.0.0", 55599);
     return result;
 }
 
@@ -31,35 +31,44 @@ struct QueryParams {
 };
 }
 
-std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecret& clientSecret) {
-        QueryParams queryParams {
-            {"client_id", clientSecret.client_id},
-            {"redirect_uri", "http://localhost:55591/"},
-            {"response_type", "code"},
-            {"scope", GDRIVE_SCOPE},
-            {"access_type", "offline"},
-        };
-
-        std::string url(AUTH_URL);
-        std::cout << "Please copy and paste the following URL into your browser.\n"
-                  << url.append(queryParams.url) << '\n';
-
-        std::string code = runServerAndWait();
-
-        httplib::Params params {
-            {"code", code},
-            {"client_id", clientSecret.client_id},
-            {"client_secret", clientSecret.client_secret},
-            {"redirect_uri", "http://localhost:55591/"},
-            {"grant_type", "authorization_code"}
-        };
-
-        httplib::SSLClient cli(OAUTH_URL);
-        // For MacOS
-        //cli.set_ca_cert_path("/etc/ssl/cert.pem");
-        httplib::Result res = cli.Post("/token", params);
-        if (res.error() == httplib::Error::Success) {
-            return std::make_unique<Credentials>(Credentials::FromJsonString(res.value().body));
-        }
+std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecret& clientSecret,
+                                                               const std::vector<std::string>& scopes) {
+    if (scopes.size() == 0)
+        // This needs to throw an exception
         return nullptr;
+
+    std::string scope(scopes[0]);
+    for (const auto& s : scopes) {
+        scope.append("+").append(s);
+    }
+	QueryParams queryParams{
+		{"client_id", clientSecret.client_id},
+		{"redirect_uri", "http://localhost:55599/"},
+		{"response_type", "code"},
+		{"scope", scope},
+		{"access_type", "offline"},
+	};
+
+	std::string url(AUTH_URL);
+	std::cout << "Please copy and paste the following URL into your browser.\n"
+		<< url.append(queryParams.url) << '\n';
+
+	std::string code = runServerAndWait();
+
+	httplib::Params params{
+		{"code", code},
+		{"client_id", clientSecret.client_id},
+		{"client_secret", clientSecret.client_secret},
+		{"redirect_uri", "http://localhost:55599/"},
+		{"grant_type", "authorization_code"}
+	};
+
+	httplib::SSLClient cli(OAUTH_URL);
+	// For MacOS
+	//cli.set_ca_cert_path("/etc/ssl/cert.pem");
+	httplib::Result res = cli.Post("/token", params);
+	if (res.error() == httplib::Error::Success) {
+		return std::make_unique<Credentials>(Credentials::FromJsonString(res.value().body));
+	}
+	return nullptr;
 }

@@ -6,7 +6,8 @@
 class GoogleAuthenticator {
 public:
     [[nodiscard]]
-    static std::unique_ptr<Credentials> Authenticate(const ClientSecret& secret);
+    static std::unique_ptr<Credentials> Authenticate(const ClientSecret& secret,
+                                                     const std::vector<std::string>& scopes = {});
 };
 
 #endif
