@@ -24,15 +24,15 @@ std::string GoogleAuthenticator::ConstructAuthUrl() const {
     for (const auto& s : scopes) {
         scope.append("+").append(s);
     }
-	QueryParams queryParams{
-		{"client_id", secret.client_id},
-		{"redirect_uri", uri},
-		{"response_type", "code"},
-		{"scope", scope},
-		{"access_type", "offline"},
-	};
+    QueryParams queryParams{
+        {"client_id", secret.client_id},
+        {"redirect_uri", uri},
+        {"response_type", "code"},
+        {"scope", scope},
+        {"access_type", "offline"},
+    };
 
-	std::string url = std::string(AUTH_URL).append(queryParams.url);
+    std::string url = std::string(AUTH_URL).append(queryParams.url);
     return url;
 }
 
@@ -53,28 +53,28 @@ std::string GoogleAuthenticator::RunCodeReceiverServer() const {
 
 std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::string& code) const {
     httplib::Params params{
-		{"code", code},
-		{"client_id", secret.client_id},
-		{"client_secret", secret.client_secret},
-		{"redirect_uri", uri},
-		{"grant_type", "authorization_code"}
-	};
+        {"code", code},
+        {"client_id", secret.client_id},
+        {"client_secret", secret.client_secret},
+        {"redirect_uri", uri},
+        {"grant_type", "authorization_code"}
+    };
 
-	httplib::SSLClient cli(OAUTH_URL);
-	// For MacOS
-	//cli.set_ca_cert_path("/etc/ssl/cert.pem");
-	httplib::Result res = cli.Post("/token", params);
-	if (res.error() == httplib::Error::Success) {
-		return std::optional<Credentials>(Credentials::FromJsonString(res.value().body));
-	}
-	return std::nullopt;
+    httplib::SSLClient cli(OAUTH_URL);
+    // For MacOS
+    //cli.set_ca_cert_path("/etc/ssl/cert.pem");
+    httplib::Result res = cli.Post("/token", params);
+    if (res.error() == httplib::Error::Success) {
+        return std::optional<Credentials>(Credentials::FromJsonString(res.value().body));
+    }
+    return std::nullopt;
 }
 
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     std::string url = ConstructAuthUrl();
-	std::cout << "Please copy and paste the following URL into your browser.\n"
-		<< url << '\n';
+    std::cout << "Please copy and paste the following URL into your browser.\n"
+              << url << '\n';
 
-	std::string code = RunCodeReceiverServer();
+    std::string code = RunCodeReceiverServer();
     return SendAuthRequest(code);
 }
