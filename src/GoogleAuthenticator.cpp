@@ -7,7 +7,36 @@ namespace {
 const int port = 55599;
 const std::string uri = std::string("http://localhost:").append(std::to_string(port));
 
-std::string runServerAndWait() {
+struct QueryParams {
+    std::string url;
+    QueryParams(const std::initializer_list<std::pair<std::string, std::string>>& params) {
+        for (int index = 0; const auto & p : params) {
+            index == 0 ? url.append("?") : url.append("&");
+            url.append(p.first).append("=").append(p.second);
+            index++;
+        }
+    }
+};
+}
+
+std::string GoogleAuthenticator::ConstructAuthUrl() const {
+    std::string scope(scopes[0]);
+    for (const auto& s : scopes) {
+        scope.append("+").append(s);
+    }
+	QueryParams queryParams{
+		{"client_id", secret.client_id},
+		{"redirect_uri", uri},
+		{"response_type", "code"},
+		{"scope", scope},
+		{"access_type", "offline"},
+	};
+
+	std::string url = std::string(AUTH_URL).append(queryParams.url);
+    return url;
+}
+
+std::string GoogleAuthenticator::RunCodeReceiverServer() const {
     httplib::Server svr;
     std::string result;
     svr.Get("/", [&svr, &result](const httplib::Request &req, httplib::Response &res) {
@@ -22,46 +51,11 @@ std::string runServerAndWait() {
     return result;
 }
 
-struct QueryParams {
-    std::string url;
-    QueryParams(const std::initializer_list<std::pair<std::string, std::string>>& params) {
-        for (int index = 0; const auto & p : params) {
-            index == 0 ? url.append("?") : url.append("&");
-            url.append(p.first).append("=").append(p.second);
-            index++;
-        }
-    }
-};
-}
-
-std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecret& clientSecret,
-                                                               const std::vector<std::string>& scopes) {
-    if (scopes.size() == 0)
-        // This needs to throw an exception
-        return nullptr;
-
-    std::string scope(scopes[0]);
-    for (const auto& s : scopes) {
-        scope.append("+").append(s);
-    }
-	QueryParams queryParams{
-		{"client_id", clientSecret.client_id},
-		{"redirect_uri", uri},
-		{"response_type", "code"},
-		{"scope", scope},
-		{"access_type", "offline"},
-	};
-
-	std::string url(AUTH_URL);
-	std::cout << "Please copy and paste the following URL into your browser.\n"
-		<< url.append(queryParams.url) << '\n';
-
-	std::string code = runServerAndWait();
-
-	httplib::Params params{
+std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::string& code) const {
+    httplib::Params params{
 		{"code", code},
-		{"client_id", clientSecret.client_id},
-		{"client_secret", clientSecret.client_secret},
+		{"client_id", secret.client_id},
+		{"client_secret", secret.client_secret},
 		{"redirect_uri", uri},
 		{"grant_type", "authorization_code"}
 	};
@@ -71,7 +65,16 @@ std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecre
 	//cli.set_ca_cert_path("/etc/ssl/cert.pem");
 	httplib::Result res = cli.Post("/token", params);
 	if (res.error() == httplib::Error::Success) {
-		return std::make_unique<Credentials>(Credentials::FromJsonString(res.value().body));
+		return std::optional<Credentials>(Credentials::FromJsonString(res.value().body));
 	}
-	return nullptr;
+	return std::nullopt;
+}
+
+std::optional<Credentials> GoogleAuthenticator::Authenticate() {
+    std::string url = ConstructAuthUrl();
+	std::cout << "Please copy and paste the following URL into your browser.\n"
+		<< url << '\n';
+
+	std::string code = RunCodeReceiverServer();
+    return SendAuthRequest(code);
 }

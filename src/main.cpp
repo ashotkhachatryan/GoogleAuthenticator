@@ -16,9 +16,11 @@ int main(int argc, char** argv) {
     }
     auto secret = ClientSecret::FromJson(argv[1]);
     std::vector<std::string> scopes {Scopes::DriveMetadataReadonly, Scopes::DrivePhotosReadonly};
-    auto credentials = GoogleAuthenticator::Authenticate(secret, scopes);
-    if (credentials) {
+    GoogleAuthenticator auth{secret, scopes};
+    auto credentials = auth.Authenticate();
+    if (credentials.has_value()) {
         httplib::SSLClient cli(GAPI_URL);
+        //cli.set_ca_cert_path("/etc/ssl/cert.pem");
         // Google Drive files list under root
         auto res = cli.Get(FILES_URL + "?q='root'%20in%20parents",
                            {{"Authorization", "Bearer " + credentials->access_token }});
