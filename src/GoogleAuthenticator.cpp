@@ -4,6 +4,9 @@
 #include "GoogleAuthenticator.h"
 
 namespace {
+const int port = 55599;
+const std::string uri = std::string("http://localhost:").append(std::to_string(port));
+
 std::string runServerAndWait() {
     httplib::Server svr;
     std::string result;
@@ -15,7 +18,7 @@ std::string runServerAndWait() {
             svr.stop();
         }
     });
-    svr.listen("0.0.0.0", 55599);
+    svr.listen("0.0.0.0", port);
     return result;
 }
 
@@ -43,7 +46,7 @@ std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecre
     }
 	QueryParams queryParams{
 		{"client_id", clientSecret.client_id},
-		{"redirect_uri", "http://localhost:55599/"},
+		{"redirect_uri", uri},
 		{"response_type", "code"},
 		{"scope", scope},
 		{"access_type", "offline"},
@@ -59,7 +62,7 @@ std::unique_ptr<Credentials> GoogleAuthenticator::Authenticate(const ClientSecre
 		{"code", code},
 		{"client_id", clientSecret.client_id},
 		{"client_secret", clientSecret.client_secret},
-		{"redirect_uri", "http://localhost:55599/"},
+		{"redirect_uri", uri},
 		{"grant_type", "authorization_code"}
 	};
 
