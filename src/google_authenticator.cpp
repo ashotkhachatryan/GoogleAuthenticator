@@ -3,20 +3,18 @@
 #include "constants.h"
 #include "google_authenticator.h"
 
-namespace {
-const int port = 55599;
-const std::string uri = std::string("http://localhost:").append(std::to_string(port));
+using namespace std;
 
-struct QueryParams {
-    std::string url;
-    QueryParams(const std::initializer_list<std::pair<std::string, std::string>>& params) {
-        for (int index = 0; const auto & p : params) {
-            index == 0 ? url.append("?") : url.append("&");
-            url.append(p.first).append("=").append(p.second);
-            index++;
-        }
+std::string GoogleAuthenticator::ConvertParamsToString(const ParamsType& params) const {
+    if (params.size() == 0)
+        return {};
+    string url{'?'};
+    for (int i = 0; i < params.size(); ++i) {
+        if (i != 0)
+            url.append("&");
+        url.append(params[i].first).append("=").append(params[i].second);
     }
-};
+    return url;
 }
 
 std::string GoogleAuthenticator::ConstructAuthUrl() const {
@@ -24,15 +22,14 @@ std::string GoogleAuthenticator::ConstructAuthUrl() const {
     for (const auto& s : scopes) {
         scope.append("+").append(s);
     }
-    QueryParams queryParams{
+    string paramsUrl = ConvertParamsToString({
         {"client_id", secret.client_id},
         {"redirect_uri", uri},
         {"response_type", "code"},
         {"scope", scope},
         {"access_type", "offline"},
-    };
-
-    std::string url = std::string(AUTH_URL).append(queryParams.url);
+    });
+    std::string url = std::string(AUTH_URL).append(paramsUrl);
     return url;
 }
 
@@ -59,7 +56,6 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
         {"redirect_uri", uri},
         {"grant_type", "authorization_code"}
     };
-
     httplib::SSLClient cli(OAUTH_URL);
     // For MacOS
     //cli.set_ca_cert_path("/etc/ssl/cert.pem");
@@ -74,7 +70,6 @@ std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     std::string url = ConstructAuthUrl();
     std::cout << "Please copy and paste the following URL into your browser.\n"
               << url << '\n';
-
     std::string code = RunCodeReceiverServer();
     return SendAuthRequest(code);
 }
