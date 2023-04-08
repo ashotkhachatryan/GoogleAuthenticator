@@ -1,6 +1,6 @@
 #include <iostream>
-#include "ClientSecret.h"
-#include "GoogleAuthenticator.h"
+#include "client_secret.h"
+#include "google_authenticator.h"
 #include "httplib.h"
 #include "constants.h"
 

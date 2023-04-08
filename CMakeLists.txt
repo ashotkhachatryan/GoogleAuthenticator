@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(GoogleAuthenticator)
+project(google_authenticator)
 
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
@@ -8,9 +8,9 @@ if(OPENSSL_FOUND)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
-set(SRC_FILES src/main.cpp src/GoogleAuthenticator.cpp)
+set(SRC_FILES src/main.cpp src/google_authenticator.cpp)
 
-add_executable(GoogleAuthenticator ${SRC_FILES})
+add_executable(google_authenticator ${SRC_FILES})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
         $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::SSL>

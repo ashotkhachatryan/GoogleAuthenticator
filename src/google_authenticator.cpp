@@ -1,7 +1,7 @@
 //#define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
 #include "constants.h"
-#include "GoogleAuthenticator.h"
+#include "google_authenticator.h"
 
 namespace {
 const int port = 55599;

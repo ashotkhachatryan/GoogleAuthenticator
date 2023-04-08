@@ -1,7 +1,7 @@
 #ifndef GOOGLE_AUTHENTICATOR_H
 #define GOOGLE_AUTHENTICATOR_H
 
-#include "ClientSecret.h"
+#include "client_secret.h"
 
 class GoogleAuthenticator {
 public:
