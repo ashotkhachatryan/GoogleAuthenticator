@@ -11,15 +11,11 @@ public:
         : secret(clientSecret)
         , scopes(scopes) { }
 
-    [[nodiscard]]
-    std::optional<Credentials> Authenticate();
+    [[nodiscard]] std::optional<Credentials> Authenticate();
 private:
-    [[nodiscard]]
-    std::string ConstructAuthUrl() const;
-    [[nodiscard]]
-    std::string RunCodeReceiverServer() const;
-    [[nodiscard]]
-    std::optional<Credentials> SendAuthRequest(const std::string& code) const;
+    [[nodiscard]] std::string ConstructAuthUrl() const;
+    [[nodiscard]] std::string RunCodeReceiverServer() const;
+    [[nodiscard]] std::optional<Credentials> SendAuthRequest(const std::string& code) const;
     std::string ConvertParamsToString(const ParamsType& params) const;
 private:
     ClientSecret secret;

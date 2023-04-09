@@ -23,11 +23,11 @@ std::string GoogleAuthenticator::ConstructAuthUrl() const {
         scope.append("+").append(s);
     }
     string paramsUrl = ConvertParamsToString({
-        {"client_id", secret.client_id},
-        {"redirect_uri", uri},
+        {"client_id",     secret.client_id},
+        {"redirect_uri",  uri},
         {"response_type", "code"},
-        {"scope", scope},
-        {"access_type", "offline"},
+        {"scope",         scope},
+        {"access_type",   "offline"},
     });
     std::string url = std::string(AUTH_URL).append(paramsUrl);
     return url;
@@ -50,11 +50,11 @@ std::string GoogleAuthenticator::RunCodeReceiverServer() const {
 
 std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::string& code) const {
     httplib::Params params{
-        {"code", code},
-        {"client_id", secret.client_id},
+        {"code",          code},
+        {"client_id",     secret.client_id},
         {"client_secret", secret.client_secret},
-        {"redirect_uri", uri},
-        {"grant_type", "authorization_code"}
+        {"redirect_uri",  uri},
+        {"grant_type",    "authorization_code"}
     };
     httplib::SSLClient cli(OAUTH_URL);
     // For MacOS
