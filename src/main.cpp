@@ -18,7 +18,9 @@ int main(int argc, char** argv) {
     auto credentials = auth.Authenticate();
     if (credentials.has_value()) {
         httplib::SSLClient cli(GAPI_URL);
-        //cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#if defined(__APPLE__)
+        cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
         // Google Drive files list under root
         auto res = cli.Get(FILES_URL + "?q='root'%20in%20parents",
                            {{"Authorization", "Bearer " + credentials->access_token }});

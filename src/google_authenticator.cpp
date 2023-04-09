@@ -57,8 +57,9 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
         {"grant_type",    "authorization_code"}
     };
     httplib::SSLClient cli(OAUTH_URL);
-    // For MacOS
-    //cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#if defined(__APPLE__)
+    cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
     httplib::Result res = cli.Post("/token", params);
     if (res.error() == httplib::Error::Success) {
         return std::optional<Credentials>(Credentials::FromJsonString(res.value().body));
