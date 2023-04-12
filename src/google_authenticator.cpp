@@ -1,4 +1,5 @@
-//#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include <filesystem>
+
 #include "httplib.h"
 #include "constants.h"
 #include "google_authenticator.h"
@@ -10,6 +11,7 @@
 #if defined(WINDOWS)
 #include "Windows.h"
 #include "shellapi.h"
+#include <shlobj.h>
 #endif
 
 using namespace std;
@@ -71,6 +73,16 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
 #endif
     httplib::Result res = cli.Post("/token", params);
     if (res.error() == httplib::Error::Success) {
+#if defined(WINDOWS)
+        // TODO
+        // Store credentials for next use
+        char myDocuments[MAX_PATH];
+        HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, myDocuments);
+        filesystem::path p = filesystem::path(myDocuments).append("\GAuth");
+        if (!filesystem::exists(p)) {
+            filesystem::create_directory(p);
+        }
+#endif
         return std::optional<Credentials>(Credentials::FromJsonString(res.value().body));
     }
     return std::nullopt;
