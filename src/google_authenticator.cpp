@@ -3,6 +3,15 @@
 #include "constants.h"
 #include "google_authenticator.h"
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#define WINDOWS
+#endif
+
+#if defined(WINDOWS)
+#include "Windows.h"
+#include "shellapi.h"
+#endif
+
 using namespace std;
 
 std::string GoogleAuthenticator::ConvertParamsToString(const ParamsType& params) const {
@@ -69,8 +78,12 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
 
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     std::string url = ConstructAuthUrl();
+#if defined(WINDOWS)
+    ShellExecute(0, 0, url.c_str(), 0, 0, SW_SHOW);
+#else
     std::cout << "Please copy and paste the following URL into your browser.\n"
               << url << '\n';
+#endif
     std::string code = RunCodeReceiverServer();
     return SendAuthRequest(code);
 }
