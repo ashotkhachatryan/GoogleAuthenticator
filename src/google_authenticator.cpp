@@ -73,17 +73,9 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
 #endif
     httplib::Result res = cli.Post("/token", params);
     if (res.error() == httplib::Error::Success) {
-#if defined(WINDOWS)
-        // TODO
-        // Store credentials for next use
-        char myDocuments[MAX_PATH];
-        HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, myDocuments);
-        filesystem::path p = filesystem::path(myDocuments).append("\GAuth");
-        if (!filesystem::exists(p)) {
-            filesystem::create_directory(p);
-        }
-#endif
-        return std::optional<Credentials>(Credentials::FromJsonString(res.value().body));
+        std::string json_body = res.value().body;
+        StoreCredentials(json_body);
+        return std::optional<Credentials>(Credentials::FromJsonString(json_body));
     }
     return std::nullopt;
 }
@@ -98,4 +90,26 @@ std::optional<Credentials> GoogleAuthenticator::Authenticate() {
 #endif
     std::string code = RunCodeReceiverServer();
     return SendAuthRequest(code);
+}
+
+void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
+    std::string documentsPath;
+#if defined(WINDOWS)
+    char myDocuments[MAX_PATH];
+    HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, myDocuments);
+    documentsPath = std::string(myDocuments);
+#endif
+
+    if (!documentsPath.empty())
+    {
+        filesystem::path dirPath = filesystem::path(documentsPath).append(dirName);
+        if (!filesystem::exists(dirPath)) {
+            filesystem::create_directory(dirPath);
+        }
+        filesystem::path filePath = dirPath.append(fileName);
+        std::ofstream ofs(filePath);
+        if (ofs)
+            ofs << data;
+        ofs.close();
+    }
 }

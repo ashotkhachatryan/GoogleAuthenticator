@@ -17,12 +17,15 @@ private:
     [[nodiscard]] std::string RunCodeReceiverServer() const;
     [[nodiscard]] std::optional<Credentials> SendAuthRequest(const std::string& code) const;
     std::string ConvertParamsToString(const ParamsType& params) const;
+    void StoreCredentials(const std::string& data) const;
 private:
     ClientSecret secret;
     std::vector<std::string> scopes;
 
     static const int port = 55599;
     inline static const std::string uri = std::string("http://localhost:").append(std::to_string(port));
+    inline static const std::string fileName = "credentials.json";
+    inline static const std::string dirName = "GAuth";
 };
 
 #endif
