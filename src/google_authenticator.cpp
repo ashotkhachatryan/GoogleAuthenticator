@@ -2,17 +2,8 @@
 
 #include "httplib.h"
 #include "constants.h"
+#include "system_utilities.h"
 #include "google_authenticator.h"
-
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#define WINDOWS
-#endif
-
-#if defined(WINDOWS)
-#include "Windows.h"
-#include "shellapi.h"
-#include <shlobj.h>
-#endif
 
 using namespace std;
 
@@ -82,24 +73,15 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
 
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     std::string url = ConstructAuthUrl();
-#if defined(WINDOWS)
-    ShellExecute(0, 0, url.c_str(), 0, 0, SW_SHOW);
-#else
-    std::cout << "Please copy and paste the following URL into your browser.\n"
-              << url << '\n';
-#endif
+    SystemUtilities::OpenUrlInBrowser(url);
+    //std::cout << "Please copy and paste the following URL into your browser.\n"
+    //          << url << '\n';
     std::string code = RunCodeReceiverServer();
     return SendAuthRequest(code);
 }
 
 void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
-    std::string documentsPath;
-#if defined(WINDOWS)
-    char myDocuments[MAX_PATH];
-    HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, myDocuments);
-    documentsPath = std::string(myDocuments);
-#endif
-
+    std::string documentsPath = SystemUtilities::GetDocumentsPath();
     if (!documentsPath.empty())
     {
         filesystem::path dirPath = filesystem::path(documentsPath).append(dirName);
