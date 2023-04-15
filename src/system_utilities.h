@@ -24,7 +24,7 @@ public:
     static void OpenUrlInBrowser(const std::string &urlStr)
     {
 #if defined(__WINDOWS__)
-        ShellExecute(0, 0, url.c_str(), 0, 0, SW_SHOW);
+        ShellExecute(0, 0, urlStr.c_str(), 0, 0, SW_SHOW);
 #elif defined(__APPLE__)
         CFURLRef url = CFURLCreateWithBytes(
             NULL,                    // allocator

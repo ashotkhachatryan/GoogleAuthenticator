@@ -72,12 +72,16 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
 }
 
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
-    std::string url = ConstructAuthUrl();
-    SystemUtilities::OpenUrlInBrowser(url);
-    //std::cout << "Please copy and paste the following URL into your browser.\n"
-    //          << url << '\n';
-    std::string code = RunCodeReceiverServer();
-    return SendAuthRequest(code);
+    auto credentials = ReadCredentials();
+    if (credentials.has_value()) {
+        return credentials;
+    }
+    else {
+        std::string url = ConstructAuthUrl();
+        SystemUtilities::OpenUrlInBrowser(url);
+        std::string code = RunCodeReceiverServer();
+        return SendAuthRequest(code);
+    }
 }
 
 void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
@@ -94,4 +98,20 @@ void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
             ofs << data;
         ofs.close();
     }
+}
+
+std::optional<Credentials> GoogleAuthenticator::ReadCredentials() const {
+    std::string documentsPath = SystemUtilities::GetDocumentsPath();
+    if (!documentsPath.empty()) {
+        filesystem::path dirPath = filesystem::path(documentsPath).append(dirName);
+        filesystem::path filePath = dirPath.append(fileName);
+        if (filesystem::exists(filePath)) {
+            std::ifstream ifs(filePath);
+            std::string jsonStr((std::istreambuf_iterator<char>(ifs)),
+                                 std::istreambuf_iterator<char>());
+
+            return std::optional<Credentials>(Credentials::FromJsonString(jsonStr));
+        }
+    }
+    return std::nullopt;
 }

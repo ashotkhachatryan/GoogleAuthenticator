@@ -18,6 +18,7 @@ private:
     [[nodiscard]] std::optional<Credentials> SendAuthRequest(const std::string& code) const;
     std::string ConvertParamsToString(const ParamsType& params) const;
     void StoreCredentials(const std::string& data) const;
+    std::optional<Credentials> ReadCredentials() const;
 private:
     ClientSecret secret;
     std::vector<std::string> scopes;
