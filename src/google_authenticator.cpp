@@ -115,3 +115,20 @@ std::optional<Credentials> GoogleAuthenticator::ReadCredentials() const {
     }
     return std::nullopt;
 }
+
+void GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) const {
+    httplib::SSLClient cli(OAUTH_URL);
+#if defined(__APPLE__)
+    cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
+    httplib::Params params{
+        {"access_token", credentials.access_token}
+    };
+    auto res = cli.Post("/tokeninfo", params);
+    if (res.error() != httplib::Error::Success) {
+        std::cout << "ERROR: " << res.error() << std::endl;
+    }
+    else {
+        std::cout << res.value().body << std::endl;
+    }
+}
