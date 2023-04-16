@@ -44,7 +44,7 @@ struct Credentials {
     std::string scope;
     std::string token_type;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Credentials,
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Credentials,
                                    access_token,
                                    expires_in,
                                    refresh_token,

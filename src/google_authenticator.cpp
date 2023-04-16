@@ -66,7 +66,32 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
     if (res.error() == httplib::Error::Success) {
         std::string json_body = res.value().body;
         StoreCredentials(json_body);
-        return std::optional<Credentials>(Credentials::FromJsonString(json_body));
+        return Credentials::FromJsonString(json_body);
+    }
+    return std::nullopt;
+}
+
+std::optional<Credentials> GoogleAuthenticator::TokenRequest(const std::string& refresh_token) const {
+    httplib::SSLClient cli(OAUTH_URL);
+#if defined(__APPLE__)
+    cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
+    httplib::Params params{
+        {"client_id", secret.client_id},
+        {"client_secret", secret.client_secret},
+        {"refresh_token", refresh_token},
+        {"grant_type", "refresh_token"}
+    };
+    auto res = cli.Post("/token", params);
+    if (res.error() == httplib::Error::Success) {
+        std::string json_body = res.value().body;
+        auto cred = Credentials::FromJsonString(json_body);
+        cred.refresh_token = refresh_token;
+
+        nlohmann::json j = cred;
+        StoreCredentials(j.dump(2));
+
+        return cred;
     }
     return std::nullopt;
 }
@@ -74,13 +99,23 @@ std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::strin
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     auto credentials = ReadCredentials();
     if (credentials.has_value()) {
+        std::string info = GetTokenInfo(credentials.value());
+        if (!info.empty()) {
+            nlohmann::json j = nlohmann::json::parse(info);
+            if (j.find("error") != j.end()) {
+                // We need to refresh token here
+                return TokenRequest(credentials.value().refresh_token);
+            }
+        }
         return credentials;
     }
     else {
         std::string url = ConstructAuthUrl();
         SystemUtilities::OpenUrlInBrowser(url);
         std::string code = RunCodeReceiverServer();
-        return SendAuthRequest(code);
+        auto cr = SendAuthRequest(code);
+        GetTokenInfo(cr.value());
+        return cr;
     }
 }
 
@@ -109,6 +144,7 @@ std::optional<Credentials> GoogleAuthenticator::ReadCredentials() const {
             std::ifstream ifs(filePath);
             std::string jsonStr((std::istreambuf_iterator<char>(ifs)),
                                  std::istreambuf_iterator<char>());
+            ifs.close();
 
             return std::optional<Credentials>(Credentials::FromJsonString(jsonStr));
         }
@@ -116,7 +152,7 @@ std::optional<Credentials> GoogleAuthenticator::ReadCredentials() const {
     return std::nullopt;
 }
 
-void GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) const {
+std::string GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) const {
     httplib::SSLClient cli(OAUTH_URL);
 #if defined(__APPLE__)
     cli.set_ca_cert_path("/etc/ssl/cert.pem");
@@ -129,6 +165,7 @@ void GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) const {
         std::cout << "ERROR: " << res.error() << std::endl;
     }
     else {
-        std::cout << res.value().body << std::endl;
+        return res.value().body;
     }
+    return std::string();
 }

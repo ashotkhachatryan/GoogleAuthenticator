@@ -19,7 +19,8 @@ private:
     std::string ConvertParamsToString(const ParamsType& params) const;
     void StoreCredentials(const std::string& data) const;
     std::optional<Credentials> ReadCredentials() const;
-    void GetTokenInfo(const Credentials& credentials) const;
+    std::string GetTokenInfo(const Credentials& credentials) const;
+    std::optional<Credentials> TokenRequest(const std::string& credentials) const;
 private:
     ClientSecret secret;
     std::vector<std::string> scopes;
