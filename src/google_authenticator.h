@@ -5,7 +5,7 @@
 
 class GoogleAuthenticator {
 public:
-    using ParamsType = std::vector<std::pair<std::string, std::string>>;
+    using Params = std::multimap<std::string, std::string>;
     GoogleAuthenticator(const ClientSecret& clientSecret,
                         const std::vector<std::string>& scopes)
         : secret(clientSecret)
@@ -15,12 +15,13 @@ public:
 private:
     [[nodiscard]] std::string ConstructAuthUrl() const;
     [[nodiscard]] std::string RunCodeReceiverServer() const;
-    [[nodiscard]] std::optional<Credentials> SendAuthRequest(const std::string& code) const;
-    std::string ConvertParamsToString(const ParamsType& params) const;
+    std::string ConvertParamsToString(const Params& params) const;
     void StoreCredentials(const std::string& data) const;
     std::optional<Credentials> ReadCredentials() const;
     std::string GetTokenInfo(const Credentials& credentials) const;
-    std::optional<Credentials> TokenRequest(const std::string& credentials) const;
+    std::optional<Credentials> TokenRequest(const Params& params) const;
+    bool IsTokenValid(const Credentials& credentials) const;
+
 private:
     ClientSecret secret;
     std::vector<std::string> scopes;

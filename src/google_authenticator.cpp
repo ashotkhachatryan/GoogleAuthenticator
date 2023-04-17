@@ -7,14 +7,16 @@
 
 using namespace std;
 
-std::string GoogleAuthenticator::ConvertParamsToString(const ParamsType& params) const {
+std::string GoogleAuthenticator::ConvertParamsToString(const Params& params) const {
     if (params.size() == 0)
         return {};
     string url{'?'};
-    for (int i = 0; i < params.size(); ++i) {
-        if (i != 0)
+
+    for (auto p : params) {
+        if (p != *params.begin()) {
             url.append("&");
-        url.append(params[i].first).append("=").append(params[i].second);
+        }
+        url.append(p.first).append("=").append(p.second);
     }
     return url;
 }
@@ -50,48 +52,15 @@ std::string GoogleAuthenticator::RunCodeReceiverServer() const {
     return result;
 }
 
-std::optional<Credentials> GoogleAuthenticator::SendAuthRequest(const std::string& code) const {
-    httplib::Params params{
-        {"code",          code},
-        {"client_id",     secret.client_id},
-        {"client_secret", secret.client_secret},
-        {"redirect_uri",  uri},
-        {"grant_type",    "authorization_code"}
-    };
+std::optional<Credentials> GoogleAuthenticator::TokenRequest(const httplib::Params& params) const {
     httplib::SSLClient cli(OAUTH_URL);
 #if defined(__APPLE__)
     cli.set_ca_cert_path("/etc/ssl/cert.pem");
 #endif
-    httplib::Result res = cli.Post("/token", params);
-    if (res.error() == httplib::Error::Success) {
-        std::string json_body = res.value().body;
-        StoreCredentials(json_body);
-        return Credentials::FromJsonString(json_body);
-    }
-    return std::nullopt;
-}
-
-std::optional<Credentials> GoogleAuthenticator::TokenRequest(const std::string& refresh_token) const {
-    httplib::SSLClient cli(OAUTH_URL);
-#if defined(__APPLE__)
-    cli.set_ca_cert_path("/etc/ssl/cert.pem");
-#endif
-    httplib::Params params{
-        {"client_id", secret.client_id},
-        {"client_secret", secret.client_secret},
-        {"refresh_token", refresh_token},
-        {"grant_type", "refresh_token"}
-    };
     auto res = cli.Post("/token", params);
     if (res.error() == httplib::Error::Success) {
         std::string json_body = res.value().body;
-        auto cred = Credentials::FromJsonString(json_body);
-        cred.refresh_token = refresh_token;
-
-        nlohmann::json j = cred;
-        StoreCredentials(j.dump(2));
-
-        return cred;
+        return Credentials::FromJsonString(json_body);
     }
     return std::nullopt;
 }
@@ -99,13 +68,24 @@ std::optional<Credentials> GoogleAuthenticator::TokenRequest(const std::string& 
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     auto credentials = ReadCredentials();
     if (credentials.has_value()) {
-        std::string info = GetTokenInfo(credentials.value());
-        if (!info.empty()) {
-            nlohmann::json j = nlohmann::json::parse(info);
-            if (j.find("error") != j.end()) {
-                // We need to refresh token here
-                return TokenRequest(credentials.value().refresh_token);
+        if (!IsTokenValid(credentials.value()))
+        {
+            httplib::Params params{
+                {"client_id", secret.client_id},
+                {"client_secret", secret.client_secret},
+                {"refresh_token", credentials.value().refresh_token},
+                {"grant_type", "refresh_token"}
+            };
+            auto cred = TokenRequest(params);
+
+            if (cred.has_value())
+            {
+                nlohmann::json j = cred.value();
+                StoreCredentials(j.dump(2));
+                cred.value().refresh_token = credentials.value().refresh_token;
             }
+
+            return cred;
         }
         return credentials;
     }
@@ -113,8 +93,19 @@ std::optional<Credentials> GoogleAuthenticator::Authenticate() {
         std::string url = ConstructAuthUrl();
         SystemUtilities::OpenUrlInBrowser(url);
         std::string code = RunCodeReceiverServer();
-        auto cr = SendAuthRequest(code);
-        GetTokenInfo(cr.value());
+        httplib::Params params{
+            {"code",          code},
+            {"client_id",     secret.client_id},
+            {"client_secret", secret.client_secret},
+            {"redirect_uri",  uri},
+            {"grant_type",    "authorization_code"}
+        };
+        auto cr = TokenRequest(params);
+        if (cr.has_value())
+        {
+            nlohmann::json j = cr.value();
+            StoreCredentials(j.dump(2));
+        }
         return cr;
     }
 }
@@ -168,4 +159,15 @@ std::string GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) co
         return res.value().body;
     }
     return std::string();
+}
+
+bool GoogleAuthenticator::IsTokenValid(const Credentials& credentials) const {
+    std::string info = GetTokenInfo(credentials);
+    if (!info.empty()) {
+        nlohmann::json j = nlohmann::json::parse(info);
+        if (j.find("error") != j.end()) {
+            return false;
+        }
+    }
+    return true;
 }
