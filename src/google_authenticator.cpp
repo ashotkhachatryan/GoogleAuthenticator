@@ -66,48 +66,48 @@ std::optional<Credentials> GoogleAuthenticator::TokenRequest(const httplib::Para
 }
 
 std::optional<Credentials> GoogleAuthenticator::Authenticate() {
+
+    httplib::Params params;
+    std::string refreshToken;
+
     auto credentials = ReadCredentials();
+
     if (credentials.has_value()) {
-        if (!IsTokenValid(credentials.value()))
-        {
-            httplib::Params params{
-                {"client_id", secret.client_id},
-                {"client_secret", secret.client_secret},
-                {"refresh_token", credentials.value().refresh_token},
-                {"grant_type", "refresh_token"}
-            };
-            auto cred = TokenRequest(params);
+        if (IsTokenValid(credentials.value()))
+            return credentials;
 
-            if (cred.has_value())
-            {
-                nlohmann::json j = cred.value();
-                StoreCredentials(j.dump(2));
-                cred.value().refresh_token = credentials.value().refresh_token;
-            }
-
-            return cred;
-        }
-        return credentials;
+		refreshToken = credentials.value().refresh_token;
+		params = {
+			{"client_id", secret.client_id},
+			{"client_secret", secret.client_secret},
+			{"refresh_token", refreshToken},
+			{"grant_type", "refresh_token"}
+		};
     }
     else {
         std::string url = ConstructAuthUrl();
         SystemUtilities::OpenUrlInBrowser(url);
         std::string code = RunCodeReceiverServer();
-        httplib::Params params{
+        params = {
             {"code",          code},
             {"client_id",     secret.client_id},
             {"client_secret", secret.client_secret},
             {"redirect_uri",  uri},
             {"grant_type",    "authorization_code"}
         };
-        auto cr = TokenRequest(params);
-        if (cr.has_value())
-        {
-            nlohmann::json j = cr.value();
-            StoreCredentials(j.dump(2));
-        }
-        return cr;
     }
+
+    auto cred = TokenRequest(params);
+
+    if (cred.has_value())
+    {
+        nlohmann::json j = cred.value();
+        if (!refreshToken.empty())
+            cred.value().refresh_token = refreshToken;
+        StoreCredentials(j.dump(2));
+    }
+
+    return cred;
 }
 
 void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
