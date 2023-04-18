@@ -65,8 +65,23 @@ std::optional<Credentials> GoogleAuthenticator::TokenRequest(const httplib::Para
     return std::nullopt;
 }
 
-std::optional<Credentials> GoogleAuthenticator::Authenticate() {
+httplib::Params GoogleAuthenticator::GetParams(std::string token, bool refresh) const {
+    httplib::Params params {
+        {"client_id", secret.client_id},
+        {"client_secret", secret.client_secret},
+        {"grant_type", refresh ? "refresh_token" : "authorization_code"},
+    };
+    if (refresh) {
+        params.insert({ "refresh_token", token });
+    }
+    else {
+        params.insert({ "code", token });
+        params.insert({ "redirect_uri", uri });
+    }
+    return params;
+}
 
+std::optional<Credentials> GoogleAuthenticator::Authenticate() {
     httplib::Params params;
     std::string refreshToken;
 
@@ -77,30 +92,18 @@ std::optional<Credentials> GoogleAuthenticator::Authenticate() {
             return credentials;
 
 		refreshToken = credentials.value().refresh_token;
-		params = {
-			{"client_id", secret.client_id},
-			{"client_secret", secret.client_secret},
-			{"refresh_token", refreshToken},
-			{"grant_type", "refresh_token"}
-		};
+        params = GetParams(refreshToken, true);
     }
     else {
         std::string url = ConstructAuthUrl();
         SystemUtilities::OpenUrlInBrowser(url);
         std::string code = RunCodeReceiverServer();
-        params = {
-            {"code",          code},
-            {"client_id",     secret.client_id},
-            {"client_secret", secret.client_secret},
-            {"redirect_uri",  uri},
-            {"grant_type",    "authorization_code"}
-        };
+        params = GetParams(code, true);
     }
 
     auto cred = TokenRequest(params);
 
-    if (cred.has_value())
-    {
+    if (cred.has_value()) {
         nlohmann::json j = cred.value();
         if (!refreshToken.empty())
             cred.value().refresh_token = refreshToken;

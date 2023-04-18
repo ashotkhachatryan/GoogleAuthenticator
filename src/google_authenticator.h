@@ -21,6 +21,7 @@ private:
     std::string GetTokenInfo(const Credentials& credentials) const;
     std::optional<Credentials> TokenRequest(const Params& params) const;
     bool IsTokenValid(const Credentials& credentials) const;
+    Params GetParams(std::string token, bool refresh = false) const;
 
 private:
     ClientSecret secret;
