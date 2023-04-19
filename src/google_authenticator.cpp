@@ -91,14 +91,14 @@ std::optional<Credentials> GoogleAuthenticator::Authenticate() {
         if (IsTokenValid(credentials.value()))
             return credentials;
 
-		refreshToken = credentials.value().refresh_token;
+        refreshToken = credentials.value().refresh_token;
         params = GetParams(refreshToken, true);
     }
     else {
         std::string url = ConstructAuthUrl();
         SystemUtilities::OpenUrlInBrowser(url);
         std::string code = RunCodeReceiverServer();
-        params = GetParams(code, true);
+        params = GetParams(code);
     }
 
     auto cred = TokenRequest(params);
