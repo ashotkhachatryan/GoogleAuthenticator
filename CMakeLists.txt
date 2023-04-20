@@ -8,7 +8,7 @@ if(OPENSSL_FOUND)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
-set(SRC_FILES src/main.cpp src/google_authenticator.cpp)
+set(SRC_FILES src/main.cpp src/google_authenticator.cpp src/request_handler.cpp)
 
 add_executable(google_authenticator ${SRC_FILES})
 

@@ -4,6 +4,7 @@
 #include "constants.h"
 #include "system_utilities.h"
 #include "google_authenticator.h"
+#include "request_handler.h"
 
 using namespace std;
 
@@ -53,11 +54,7 @@ std::string GoogleAuthenticator::RunCodeReceiverServer() const {
 }
 
 std::optional<Credentials> GoogleAuthenticator::TokenRequest(const httplib::Params& params) const {
-    httplib::SSLClient cli(OAUTH_URL);
-#if defined(__APPLE__)
-    cli.set_ca_cert_path("/etc/ssl/cert.pem");
-#endif
-    auto res = cli.Post("/token", params);
+    auto res = RequestHandler::PostRequest(OAUTH_URL, "/token", params);
     if (res.error() == httplib::Error::Success) {
         std::string json_body = res.value().body;
         return Credentials::FromJsonString(json_body);
@@ -147,14 +144,10 @@ std::optional<Credentials> GoogleAuthenticator::ReadCredentials() const {
 }
 
 std::string GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) const {
-    httplib::SSLClient cli(OAUTH_URL);
-#if defined(__APPLE__)
-    cli.set_ca_cert_path("/etc/ssl/cert.pem");
-#endif
     httplib::Params params{
         {"access_token", credentials.access_token}
     };
-    auto res = cli.Post("/tokeninfo", params);
+    auto res = RequestHandler::PostRequest(OAUTH_URL, "/tokeninfo", params);
     if (res.error() != httplib::Error::Success) {
         std::cout << "ERROR: " << res.error() << std::endl;
     }
