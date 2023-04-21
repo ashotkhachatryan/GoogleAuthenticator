@@ -11,3 +11,15 @@ RequestHandler::PostRequest(const std::string& host,
 #endif
     return cli.Post(url, params);
 }
+
+httplib::Result
+RequestHandler::GetRequest(const std::string& host,
+                           const std::string& url,
+                           const httplib::Headers& headers)
+{
+    httplib::SSLClient cli(host);
+#if defined(__APPLE__)
+    cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
+    return cli.Get(url, headers);
+}

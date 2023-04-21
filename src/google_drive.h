@@ -2,6 +2,7 @@
 #define GOOGLE_DRIVE_H
 
 #include "json.hpp"
+#include "request_handler.h"
 
 struct GFile {
     std::string kind;
@@ -21,13 +22,8 @@ public:
 
     std::vector<GFile> GetFileList(const std::string& location = "root") {
         std::vector<GFile> result;
-        httplib::SSLClient cli(GAPI_URL);
-#if defined(__APPLE__)
-        cli.set_ca_cert_path("/etc/ssl/cert.pem");
-#endif
-        // Google Drive files list under root
-        auto res = cli.Get(FILES_URL + "?q='root'%20in%20parents",
-            { {"Authorization", "Bearer " + credentials.access_token } });
+        httplib::Headers headers = { {"Authorization", "Bearer " + credentials.access_token } };
+        auto res = RequestHandler::GetRequest(GAPI_URL, FILES_URL + "?q='root'%20in%20parents", headers);
         if (res.error() == httplib::Error::Success) {
             nlohmann::json data = nlohmann::json::parse(res.value().body);
             for (const auto& el : data["files"]) {
