@@ -4,6 +4,9 @@
 #include "json.hpp"
 #include "request_handler.h"
 
+using namespace httplib;
+using json = nlohmann::json;
+
 struct GFile {
     std::string kind;
     std::string mimeType;
@@ -31,6 +34,40 @@ public:
             }
         }
         return result;
+    }
+
+    int UploadFile(const std::string& filePath, const std::string& fileName, const std::string& fileType) {
+        std::ifstream file_stream(filePath + fileName, std::ios::binary);
+        if (!file_stream) {
+            std::cerr << "Failed to open file" << std::endl;
+            return 1;
+        }
+        std::string file_content((std::istreambuf_iterator<char>(file_stream)),
+                                  std::istreambuf_iterator<char>());
+
+        httplib::MultipartFormDataItems items = {
+            {"metadata", json{{"name", fileName}}.dump(), "application/json"},
+            {"file", file_content, fileType, fileName}
+        };
+        // Set headers
+        Headers headers = {
+            {"Authorization", "Bearer " + credentials.access_token},
+            {"Content-Type", fileType}
+        };
+
+        httplib::SSLClient client("www.googleapis.com");
+#if defined(__APPLE__)
+    client.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
+        auto res = client.Post("/upload/drive/v3/files?uploadType=multipart", headers, items);
+        if (res) {
+            std::cout << "Status code: " << res->status << std::endl;
+            std::cout << "Response body: " << res->body << std::endl;
+        } else {
+            std::cerr << "Failed to send request: " << res.error() << std::endl;
+            return 1;
+        }
+        return 0;
     }
 private:
     Credentials credentials;
