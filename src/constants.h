@@ -6,6 +6,7 @@
 struct Scopes {
     inline static std::string DriveMetadataReadonly = "https://www.googleapis.com/auth/drive.metadata.readonly";
     inline static std::string DrivePhotosReadonly = "https://www.googleapis.com/auth/drive.photos.readonly";
+    inline static std::string Drive = "https://www.googleapis.com/auth/drive";
 };
 
 static const std::string AUTH_URL     = "https://accounts.google.com/o/oauth2/v2/auth";

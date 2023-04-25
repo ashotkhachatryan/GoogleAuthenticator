@@ -42,20 +42,27 @@ public:
             std::cerr << "Failed to open file" << std::endl;
             return 1;
         }
-        std::string file_content((std::istreambuf_iterator<char>(file_stream)),
-                                  std::istreambuf_iterator<char>());
+        std::string fileContent((std::istreambuf_iterator<char>(file_stream)),
+                                 std::istreambuf_iterator<char>());
 
-        httplib::MultipartFormDataItems items = {
-            {"metadata", json{{"name", fileName}}.dump(), "application/json"},
-            {"file", file_content, fileType, fileName}
-        };
-        // Set headers
-        Headers headers = {
-            {"Authorization", "Bearer " + credentials.access_token},
-            {"Content-Type", fileType}
+        MultipartFormData media {
+            .name = "file",
+            .content = fileContent,
+            .filename = fileName,
+            .content_type = fileType
         };
 
-        httplib::SSLClient client("www.googleapis.com");
+        MultipartFormData metadata {
+            .name = "metadata",
+            .content = json{ {"name", fileName} }.dump(),
+            .filename = "",
+            .content_type = "application/json; charset=UTF-8"
+        };
+
+        httplib::MultipartFormDataItems items = { metadata, media };
+        Headers headers = { {"Authorization", "Bearer " + credentials.access_token} };
+
+        httplib::SSLClient client(GAPI_URL);
 #if defined(__APPLE__)
     client.set_ca_cert_path("/etc/ssl/cert.pem");
 #endif
