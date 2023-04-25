@@ -56,8 +56,10 @@ std::string GoogleAuthenticator::RunCodeReceiverServer() const {
 std::optional<Credentials> GoogleAuthenticator::TokenRequest(const httplib::Params& params) const {
     auto res = RequestHandler::PostRequest(OAUTH_URL, "/token", params);
     if (res.error() == httplib::Error::Success) {
-        std::string json_body = res.value().body;
-        return Credentials::FromJsonString(json_body);
+        return Credentials::FromJsonString(res->body);
+    }
+    else {
+        std::cerr << "TokenRequest failed: " << res.error() << std::endl;
     }
     return std::nullopt;
 }
@@ -148,11 +150,11 @@ std::string GoogleAuthenticator::GetTokenInfo(const Credentials& credentials) co
         {"access_token", credentials.access_token}
     };
     auto res = RequestHandler::PostRequest(OAUTH_URL, "/tokeninfo", params);
-    if (res.error() != httplib::Error::Success) {
-        std::cout << "ERROR: " << res.error() << std::endl;
+    if (res.error() == httplib::Error::Success) {
+        return res->body;
     }
     else {
-        return res.value().body;
+        std::cerr << "GetTokenInfo failed: " << res.error() << std::endl;
     }
     return std::string();
 }

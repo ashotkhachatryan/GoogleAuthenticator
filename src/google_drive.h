@@ -28,10 +28,13 @@ public:
         httplib::Headers headers = { {"Authorization", "Bearer " + credentials.access_token } };
         auto res = RequestHandler::GetRequest(GAPI_URL, FILES_URL + "?q='root'%20in%20parents", headers);
         if (res.error() == httplib::Error::Success) {
-            nlohmann::json data = nlohmann::json::parse(res.value().body);
+            nlohmann::json data = nlohmann::json::parse(res->body);
             for (const auto& el : data["files"]) {
                 result.push_back(el.get<GFile>());
             }
+        }
+        else {
+            std::cerr << "GetFileList failed: " << res.error() << std::endl;
         }
         return result;
     }
