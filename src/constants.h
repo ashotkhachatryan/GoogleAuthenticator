@@ -14,5 +14,6 @@ static const std::string GDRIVE_SCOPE = "https://www.googleapis.com/auth/drive.m
 static const std::string OAUTH_URL    = "oauth2.googleapis.com";
 static const std::string GAPI_URL     = "www.googleapis.com";
 static const std::string FILES_URL    = "/drive/v3/files";
+static const std::string UPLOAD_URL   = "/upload/drive/v3/files?uploadType=multipart";
 
 #endif

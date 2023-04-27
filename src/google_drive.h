@@ -1,11 +1,11 @@
 #ifndef GOOGLE_DRIVE_H
 #define GOOGLE_DRIVE_H
 
+#include <filesystem>
+
 #include "json.hpp"
 #include "request_handler.h"
-
-using namespace httplib;
-using json = nlohmann::json;
+#include "mime_type.h"
 
 struct GFile {
     std::string kind;
@@ -39,8 +39,8 @@ public:
         return result;
     }
 
-    int UploadFile(const std::string& filePath, const std::string& fileName, const std::string& fileType) {
-        std::ifstream file_stream(filePath + fileName, std::ios::binary);
+    int UploadFile(const std::string& filePath) {
+        std::ifstream file_stream(filePath, std::ios::binary);
         if (!file_stream) {
             std::cerr << "Failed to open file" << std::endl;
             return 1;
@@ -48,28 +48,28 @@ public:
         std::string fileContent((std::istreambuf_iterator<char>(file_stream)),
                                  std::istreambuf_iterator<char>());
 
-        MultipartFormData media {
+        std::string fileName{ std::filesystem::path(filePath).filename().string() };
+        httplib::MultipartFormData media {
             .name = "file",
             .content = fileContent,
             .filename = fileName,
-            .content_type = fileType
+            .content_type = MIMEType::get(fileName)
         };
-
-        MultipartFormData metadata {
+        httplib::MultipartFormData metadata {
             .name = "metadata",
-            .content = json{ {"name", fileName} }.dump(),
+            .content = nlohmann::json{ {"name", fileName} }.dump(),
             .filename = "",
             .content_type = "application/json; charset=UTF-8"
         };
 
         httplib::MultipartFormDataItems items = { metadata, media };
-        Headers headers = { {"Authorization", "Bearer " + credentials.access_token} };
+        httplib::Headers headers = { {"Authorization", "Bearer " + credentials.access_token} };
 
         httplib::SSLClient client(GAPI_URL);
 #if defined(__APPLE__)
     client.set_ca_cert_path("/etc/ssl/cert.pem");
 #endif
-        auto res = client.Post("/upload/drive/v3/files?uploadType=multipart", headers, items);
+        auto res = client.Post(UPLOAD_URL, headers, items);
         if (res) {
             std::cout << "Status code: " << res->status << std::endl;
             std::cout << "Response body: " << res->body << std::endl;
