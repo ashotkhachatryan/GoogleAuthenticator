@@ -39,7 +39,7 @@ public:
         return result;
     }
 
-    int UploadFile(const std::string& filePath) {
+    int UploadFile(const std::string& filePath, const std::string& parent = "root") {
         std::ifstream file_stream(filePath, std::ios::binary);
         if (!file_stream) {
             std::cerr << "Failed to open file" << std::endl;
@@ -55,9 +55,10 @@ public:
             .filename = fileName,
             .content_type = MIMEType::get(fileName)
         };
+        std::string folderId = GetFileId(parent).value();
         httplib::MultipartFormData metadata {
             .name = "metadata",
-            .content = nlohmann::json{ {"name", fileName} }.dump(),
+            .content = nlohmann::json{ {"name", fileName}, {"parents", {folderId} }}.dump(),
             .filename = "",
             .content_type = "application/json; charset=UTF-8"
         };
@@ -78,6 +79,16 @@ public:
             return 1;
         }
         return 0;
+    }
+
+    std::optional<std::string> GetFileId(const std::string& fileName, const std::string& parent = "root") {
+        std::vector<GFile> files = GetFileList(parent);
+        auto it = std::find_if(files.begin(), files.end(), [&](GFile f) {
+            return f.name == fileName;
+        });
+        if (it != files.end())
+            return it->id;
+        return std::nullopt;
     }
 private:
     Credentials credentials;
