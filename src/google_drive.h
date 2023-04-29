@@ -23,14 +23,27 @@ public:
         : credentials(c) {
     }
 
-    std::vector<GFile> GetFileList(const std::string& location = "root") {
+    std::vector<GFile> GetFileList(const std::string& location = "root",
+                                   const std::string& nextPageToken = "") {
+        std::stringstream query;
+        query << FILES_URL << "?q='" << location << "'%20in%20parents";
+        if (!nextPageToken.empty())
+            query << "&pageToken=" << nextPageToken;
+
+        auto res = RequestHandler::GetRequest(GAPI_URL, query.str(),
+            { { "Authorization", "Bearer " + credentials.access_token } });
+
         std::vector<GFile> result;
-        httplib::Headers headers = { {"Authorization", "Bearer " + credentials.access_token } };
-        auto res = RequestHandler::GetRequest(GAPI_URL, FILES_URL + "?q='root'%20in%20parents", headers);
         if (res.error() == httplib::Error::Success) {
             nlohmann::json data = nlohmann::json::parse(res->body);
             for (const auto& el : data["files"]) {
                 result.push_back(el.get<GFile>());
+            }
+
+            if (data.find("nextPageToken") != data.end()) {
+                std::string token = data["nextPageToken"].get<std::string>();
+                auto nextResult = GetFileList(location, token);
+                result.insert(result.end(), nextResult.begin(), nextResult.end());
             }
         }
         else {
