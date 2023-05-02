@@ -7,6 +7,26 @@
 #include "request_handler.h"
 #include "mime_type.h"
 
+namespace {
+    std::vector<std::string> split(const std::string& str, char delimeter)
+    {
+        std::vector<std::string> result;
+        size_t begin = 0;
+        int end = str.find(delimeter, 0);
+        while (end != -1) {
+            std::string substr = str.substr(begin, end - begin);
+            result.push_back(substr);
+
+            begin = end + 1;
+            end = begin;
+
+            end = str.find(delimeter, end);
+        }
+        result.push_back(str.substr(begin, str.size() - begin));
+        return result;
+    }
+}
+
 struct GFile {
     std::string kind;
     std::string mimeType;
@@ -94,15 +114,50 @@ public:
         return 0;
     }
 
-    std::optional<std::string> GetFileId(const std::string& fileName, const std::string& parent = "root") {
+    std::optional<std::string> GetFileId(const std::string& path) {
+        auto pathVec = SplitPath(path);
+        if (pathVec.size() == 0) {
+            std::cerr << "Failed to parse the given path.\n";
+            return std::nullopt;
+        }
+
+        std::string parent = "root";
+        for (const auto& p : pathVec) {
+            if (p == "root")
+                continue;
+            auto fileId = GetFileId(p, parent);
+            if (fileId.has_value())
+                parent = fileId.value();
+            else {
+                return std::nullopt;
+            }
+        }
+        return parent;
+    }
+
+private:
+    std::optional<std::string> GetFileId(const std::string& fileName, const std::string& parent) {
         std::vector<GFile> files = GetFileList(parent);
         auto it = std::find_if(files.begin(), files.end(), [&](GFile f) {
             return f.name == fileName;
-        });
+            });
         if (it != files.end())
             return it->id;
         return std::nullopt;
     }
+
+    std::vector<std::string> SplitPath(const std::string& path) {
+        std::string str = path;
+        if (str.size() == 0 || str[0] != '/')
+            return {};
+        if (str.back() == '/')
+            str = str.substr(0, str.size() - 1);
+        auto v = split(str.substr(1), '/');
+        if (v.size() == 0 || v[0] != "root")
+            return {};
+        return v;
+    }
+
 private:
     Credentials credentials;
 };
