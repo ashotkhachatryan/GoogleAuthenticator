@@ -72,7 +72,7 @@ public:
         return result;
     }
 
-    int UploadFile(const std::string& filePath, const std::string& parent = "root") {
+    int UploadFile(const std::string& filePath, const std::string& parent = "/root") {
         std::ifstream file_stream(filePath, std::ios::binary);
         if (!file_stream) {
             std::cerr << "Failed to open file" << std::endl;
