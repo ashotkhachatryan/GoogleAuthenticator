@@ -6,12 +6,10 @@
 #include "google_authenticator.h"
 #include "request_handler.h"
 
-using namespace std;
-
 std::string GoogleAuthenticator::ConvertParamsToString(const Params& params) const {
     if (params.size() == 0)
         return {};
-    string url{'?'};
+    std::string url{'?'};
 
     for (auto p : params) {
         if (p != *params.begin()) {
@@ -27,7 +25,7 @@ std::string GoogleAuthenticator::ConstructAuthUrl() const {
     for (const auto& s : scopes) {
         scope.append("+").append(s);
     }
-    string paramsUrl = ConvertParamsToString({
+    std::string paramsUrl = ConvertParamsToString({
         {"client_id",     secret.client_id},
         {"redirect_uri",  uri},
         {"response_type", "code"},
@@ -116,11 +114,11 @@ void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
     std::string documentsPath = SystemUtilities::GetDocumentsPath();
     if (!documentsPath.empty())
     {
-        filesystem::path dirPath = filesystem::path(documentsPath).append(dirName);
-        if (!filesystem::exists(dirPath)) {
-            filesystem::create_directory(dirPath);
+        std::filesystem::path dirPath = std::filesystem::path(documentsPath).append(dirName);
+        if (!std::filesystem::exists(dirPath)) {
+            std::filesystem::create_directory(dirPath);
         }
-        filesystem::path filePath = dirPath.append(fileName);
+        std::filesystem::path filePath = dirPath.append(fileName);
         std::ofstream ofs(filePath);
         if (ofs)
             ofs << data;
@@ -131,9 +129,9 @@ void GoogleAuthenticator::StoreCredentials(const std::string& data) const {
 std::optional<Credentials> GoogleAuthenticator::ReadCredentials() const {
     std::string documentsPath = SystemUtilities::GetDocumentsPath();
     if (!documentsPath.empty()) {
-        filesystem::path dirPath = filesystem::path(documentsPath).append(dirName);
-        filesystem::path filePath = dirPath.append(fileName);
-        if (filesystem::exists(filePath)) {
+        std::filesystem::path dirPath = std::filesystem::path(documentsPath).append(dirName);
+        auto filePath = dirPath.append(fileName);
+        if (std::filesystem::exists(filePath)) {
             std::ifstream ifs(filePath);
             std::string jsonStr((std::istreambuf_iterator<char>(ifs)),
                                  std::istreambuf_iterator<char>());
