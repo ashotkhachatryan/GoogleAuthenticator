@@ -36,6 +36,7 @@ public:
         LSOpenCFURLRef(url, 0);
         CFRelease(url);
 #elif defined(__linux__)
+        system(("xdg-open '" + urlStr + "'").c_str());
 #endif
     }
     static std::string GetDocumentsPath()
@@ -45,14 +46,13 @@ public:
         char myDocuments[MAX_PATH];
         HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, myDocuments);
         documentsPath = std::string(myDocuments);
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__linux__)
         // TODO this needs to be improved
         const char *homeDir = getenv("HOME");
         if (homeDir)
         {
             documentsPath = std::string(homeDir).append("/Documents");
         }
-#elif defined(__linux__)
 #endif
         return documentsPath;
     }
