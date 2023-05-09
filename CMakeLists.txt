@@ -10,11 +10,21 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(SRC_FILES src/main.cpp
               src/google_authenticator.cpp
+              src/google_authenticator.h
               src/google_drive.cpp
-              src/request_handler.cpp)
+              src/google_drive.h
+              src/request_handler.cpp
+              src/request_handler.h
+              src/client_secret.h
+              src/constants.h
+              src/httplib.h
+              src/mime_type.h
+              src/system_utilities.h
+              )
 
 add_executable(google_authenticator ${SRC_FILES})
 
+target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} PUBLIC
         $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::SSL>
         $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::Crypto>)
