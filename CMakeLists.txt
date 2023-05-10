@@ -8,27 +8,32 @@ if(OPENSSL_FOUND)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
-set(SRC_FILES src/main.cpp
-              src/google_authenticator.cpp
-              src/google_authenticator.h
+set(SRC_FILES src/google_authenticator.cpp
               src/google_drive.cpp
-              src/google_drive.h
               src/request_handler.cpp
-              src/request_handler.h
-              src/client_secret.h
-              src/constants.h
-              src/httplib.h
-              src/mime_type.h
-              src/system_utilities.h
+              include/google_drive.h
+              include/request_handler.h
+              include/client_secret.h
+              include/constants.h
+              include/httplib.h
+              include/mime_type.h
+              include/system_utilities.h
+              include/google_authenticator.h
               )
 
-add_executable(google_authenticator ${SRC_FILES})
+set(EXE_SOURCE app/main.cpp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE src)
-target_link_libraries(${PROJECT_NAME} PUBLIC
+add_library(google_authenticator_lib STATIC ${SRC_FILES})
+add_executable(google_authenticator ${EXE_SOURCE})
+
+target_include_directories(google_authenticator_lib PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(google_authenticator PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+target_link_libraries(google_authenticator PUBLIC google_authenticator_lib)
+target_link_libraries(google_authenticator_lib PUBLIC 
         $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::SSL>
         $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::Crypto>)
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC
+target_compile_definitions(google_authenticator_lib PUBLIC
         $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:CPPHTTPLIB_OPENSSL_SUPPORT>
         )
