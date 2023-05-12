@@ -4,11 +4,11 @@ project(google_authenticator)
 
 add_subdirectory(src)
 
-#set(CMAKE_CXX_STANDARD 20)
-#set(EXE_SOURCE app/main.cpp)
-#
-#add_executable(auth ${EXE_SOURCE})
-#
-#target_include_directories(auth PRIVATE include)
-#
-#target_link_libraries(auth PUBLIC google_authenticator)
+option(BUILD_EXECUTABLE "Build the example app" OFF)
+
+if (BUILD_EXECUTABLE)
+    set(CMAKE_CXX_STANDARD 20)
+    add_executable(main app/main.cpp)
+    target_include_directories(main PRIVATE include)
+    target_link_libraries(main PUBLIC google_authenticator)
+endif()
