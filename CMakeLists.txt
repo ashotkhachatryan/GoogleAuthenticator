@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 project(google_authenticator)
 
 add_subdirectory(src)
+install(TARGETS google_authenticator RUNTIME DESTINATION lib)
 
 option(BUILD_EXECUTABLE "Build the example app" OFF)
 
@@ -11,4 +12,5 @@ if (BUILD_EXECUTABLE)
     add_executable(main app/main.cpp)
     target_include_directories(main PRIVATE include)
     target_link_libraries(main PUBLIC google_authenticator)
+    install(TARGETS main RUNTIME DESTINATION bin)
 endif()
