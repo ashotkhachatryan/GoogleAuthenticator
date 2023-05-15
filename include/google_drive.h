@@ -14,7 +14,7 @@ namespace {
     {
         std::vector<std::string> result;
         size_t begin = 0;
-        int end = str.find(delimeter, 0);
+        size_t end = str.find(delimeter, 0);
         while (end != -1) {
             std::string substr = str.substr(begin, end - begin);
             result.push_back(substr);
