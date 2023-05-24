@@ -46,6 +46,7 @@ public:
                                    const std::string& nextPageToken = "");
     int UploadFile(const std::string& filePath, const std::string& parent = "/root");
     std::optional<std::string> GetFileId(const std::string& path);
+    bool ShareFile(const std::string& fileId) const;
 
 private:
     std::optional<std::string> GetFileId(const std::string& fileName, const std::string& parent);

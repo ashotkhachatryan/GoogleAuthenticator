@@ -119,6 +119,34 @@ std::optional<std::string> GDrive::GetFileId(const std::string &fileName, const 
     return std::nullopt;
 }
 
+bool GDrive::ShareFile(const std::string& fileId) const
+{
+    httplib::Headers headers = { {"Authorization", "Bearer " + credentials.access_token} };
+    auto permissions = nlohmann::json{ {"role", "writer"}, {"type", "anyone"} }.dump();
+
+    httplib::SSLClient cli(GAPI_URL);
+#if defined(__APPLE__)
+    cli.set_ca_cert_path("/etc/ssl/cert.pem");
+#endif
+    auto res = cli.Post("/drive/v3/files/" + fileId + "/permissions",
+        headers,
+        permissions,
+        "application/json");
+
+    if (res)
+    {
+        // TODO: This doesn't mean the request succeeded.
+        std::cout << "Status code: " << res->status << std::endl;
+        std::cout << "Response body: " << res->body << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cerr << "Failed to send request: " << res.error() << std::endl;
+        return false;
+    }
+}
+
 std::vector<std::string> GDrive::SplitPath(const std::string &path)
 {
     std::string str = path;
