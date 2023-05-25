@@ -39,13 +39,14 @@ std::vector<GFile> GDrive::GetFileList(const std::string &location,
     return result;
 }
 
-int GDrive::UploadFile(const std::string &filePath, const std::string &parent)
+std::optional<std::string>
+GDrive::UploadFile(const std::string &filePath, const std::string &parent)
 {
     std::ifstream file_stream(filePath, std::ios::binary);
     if (!file_stream)
     {
         std::cerr << "Failed to open file" << std::endl;
-        return 1;
+        return std::nullopt;
     }
     std::string fileContent((std::istreambuf_iterator<char>(file_stream)),
                             std::istreambuf_iterator<char>());
@@ -73,15 +74,17 @@ int GDrive::UploadFile(const std::string &filePath, const std::string &parent)
     auto res = client.Post(UPLOAD_URL, headers, items);
     if (res)
     {
-        std::cout << "Status code: " << res->status << std::endl;
-        std::cout << "Response body: " << res->body << std::endl;
+        if (200 == res->status)
+        {
+            auto j = nlohmann::json::parse(res->body);
+            return j["id"];
+        }
+        else
+        {
+            return std::nullopt;
+        }
     }
-    else
-    {
-        std::cerr << "Failed to send request: " << res.error() << std::endl;
-        return 1;
-    }
-    return 0;
+    return std::nullopt;
 }
 
 std::optional<std::string> GDrive::GetFileId(const std::string &path)

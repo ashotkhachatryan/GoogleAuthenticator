@@ -44,7 +44,7 @@ public:
     GDrive(const Credentials& c);
     std::vector<GFile> GetFileList(const std::string& location = "root",
                                    const std::string& nextPageToken = "");
-    int UploadFile(const std::string& filePath, const std::string& parent = "/root");
+    std::optional<std::string> UploadFile(const std::string& filePath, const std::string& parent = "/root");
     std::optional<std::string> GetFileId(const std::string& path);
     bool ShareFile(const std::string& fileId) const;
 
